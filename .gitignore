@@ -1,0 +1,10 @@
+node_modules/
+*.png
+*.jpg
+*.jpeg
+*.raw
+.DS_Store
+Thumbs.db
+*.log
+coverage/
+.env

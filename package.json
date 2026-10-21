@@ -1,0 +1,51 @@
+{
+  "name": "node-red-contrib-window-capture",
+  "version": "1.0.0",
+  "description": "High-speed native desktop window enumeration and region screenshot capture for Node-RED using node-screenshots.",
+  "keywords": [
+    "node-red",
+    "screenshot",
+    "window-capture",
+    "screen-capture",
+    "computer-vision",
+    "ocr",
+    "gui-automation",
+    "node-screenshots"
+  ],
+  "homepage": "https://github.com/samuraimittal/node-red-contrib-window-capture",
+  "bugs": {
+    "url": "https://github.com/samuraimittal/node-red-contrib-window-capture/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/samuraimittal/node-red-contrib-window-capture.git"
+  },
+  "license": "MIT",
+  "author": "SamuraiMittal <samuraimittal@proton.me>",
+  "main": "nodes/window-capture.js",
+  "scripts": {
+    "test": "node --test test/window-capture.test.js"
+  },
+  "node-red": {
+    "version": ">=3.0.0",
+    "nodes": {
+      "window-capture": "nodes/window-capture.js"
+    }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "node-screenshots": "^0.2.8"
+  },
+  "optionalDependencies": {
+    "koffi": "^3.3.3"
+  },
+  "files": [
+    "lib/",
+    "nodes/",
+    "examples/",
+    "LICENSE",
+    "README.md"
+  ]
+}

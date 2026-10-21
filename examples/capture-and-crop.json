@@ -1,0 +1,79 @@
+[
+  {
+    "id": "ex_inject_list",
+    "type": "inject",
+    "name": "List Windows",
+    "props": [{ "p": "payload" }],
+    "repeat": "",
+    "once": false,
+    "payload": "",
+    "payloadType": "date",
+    "x": 150,
+    "y": 100,
+    "wires": [["ex_window_list"]]
+  },
+  {
+    "id": "ex_window_list",
+    "type": "window-list",
+    "name": "Get Active Windows",
+    "x": 360,
+    "y": 100,
+    "wires": [["ex_debug_list"]]
+  },
+  {
+    "id": "ex_debug_list",
+    "type": "debug",
+    "name": "Window List",
+    "active": true,
+    "tosidebar": true,
+    "complete": "payload",
+    "targetType": "msg",
+    "x": 570,
+    "y": 100,
+    "wires": []
+  },
+  {
+    "id": "ex_inject_capture",
+    "type": "inject",
+    "name": "Capture Screen Region",
+    "props": [
+      { "p": "target", "v": "all", "vt": "str" },
+      {
+        "p": "region",
+        "v": "{\"x\":10,\"y\":10,\"width\":200,\"height\":40,\"origin\":\"client\"}",
+        "vt": "json"
+      }
+    ],
+    "x": 170,
+    "y": 200,
+    "wires": [["ex_window_capture"]]
+  },
+  {
+    "id": "ex_window_capture",
+    "type": "window-capture",
+    "name": "Capture Region",
+    "targetType": "all",
+    "targetValue": "",
+    "origin": "client",
+    "regionX": "",
+    "regionY": "",
+    "regionWidth": "",
+    "regionHeight": "",
+    "format": "png",
+    "x": 400,
+    "y": 200,
+    "wires": [["ex_debug_capture"]]
+  },
+  {
+    "id": "ex_debug_capture",
+    "type": "debug",
+    "name": "Capture Result",
+    "active": true,
+    "tosidebar": true,
+    "complete": "true",
+    "targetType": "full",
+    "x": 620,
+    "y": 200,
+    "wires": []
+  }
+]

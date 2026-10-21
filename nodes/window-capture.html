@@ -1,0 +1,160 @@
+<!-- ======================================================================= -->
+<!-- NODE 1: window-list                                                     -->
+<!-- ======================================================================= -->
+<script type="text/javascript">
+  RED.nodes.registerType("window-list", {
+    category: "desktop",
+    color: "#68B0AB",
+    defaults: {
+      name: { value: "" }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: "font-awesome/fa-window-restore",
+    label: function () {
+      return this.name || "window-list";
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="window-list">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="window-list">
+  </div>
+</script>
+
+<script type="text/html" data-help-name="window-list">
+  <p>Enumerates all open desktop windows using native OS APIs via <code>node-screenshots</code>.</p>
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">array</span></dt>
+    <dd>
+      Array of window metadata objects:
+      <code>[{ id, title, process, pid, x, y, width, height, minimized }]</code>
+    </dd>
+  </dl>
+</script>
+
+<!-- ======================================================================= -->
+<!-- NODE 2: window-capture                                                  -->
+<!-- ======================================================================= -->
+<script type="text/javascript">
+  RED.nodes.registerType("window-capture", {
+    category: "desktop",
+    color: "#4A90E2",
+    defaults: {
+      name: { value: "" },
+      targetType: { value: "window", required: true },
+      targetValue: { value: "" },
+      origin: { value: "client" },
+      regionX: { value: "" },
+      regionY: { value: "" },
+      regionWidth: { value: "" },
+      regionHeight: { value: "" },
+      format: { value: "png" }
+    },
+    inputs: 1,
+    outputs: 1,
+    icon: "font-awesome/fa-camera",
+    label: function () {
+      if (this.name) return this.name;
+      if (this.targetType === "all") return "capture: screen";
+      if (this.targetValue) return "capture: " + this.targetValue;
+      return "window-capture";
+    },
+    oneditprepare: function () {
+      $("#node-input-targetType").on("change", function () {
+        if ($(this).val() === "all") {
+          $("#target-value-row").hide();
+        } else {
+          $("#target-value-row").show();
+        }
+      }).trigger("change");
+    }
+  });
+</script>
+
+<script type="text/html" data-template-name="window-capture">
+  <div class="form-row">
+    <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+    <input type="text" id="node-input-name" placeholder="window-capture">
+  </div>
+
+  <hr>
+  <h4>Target</h4>
+  <div class="form-row">
+    <label for="node-input-targetType"><i class="fa fa-crosshairs"></i> Mode</label>
+    <select id="node-input-targetType" style="width: 70%;">
+      <option value="all">All (Whole Screen)</option>
+      <option value="window">Window (Title Substring)</option>
+      <option value="process">Process (Executable Name)</option>
+      <option value="id">ID (Exact Window Handle)</option>
+    </select>
+  </div>
+  <div class="form-row" id="target-value-row">
+    <label for="node-input-targetValue"><i class="fa fa-search"></i> Match</label>
+    <input type="text" id="node-input-targetValue" placeholder="e.g. Notepad, notepad.exe, or 131072">
+  </div>
+
+  <hr>
+  <h4>Region (Optional)</h4>
+  <div class="form-row">
+    <label for="node-input-origin"><i class="fa fa-arrows-alt"></i> Origin</label>
+    <select id="node-input-origin" style="width: 70%;">
+      <option value="client">Client Area (Default)</option>
+      <option value="window">Window Frame</option>
+    </select>
+  </div>
+  <div class="form-row">
+    <label for="node-input-regionX"><i class="fa fa-crop"></i> X / Y</label>
+    <input type="number" id="node-input-regionX" placeholder="x" style="width: 33%;">
+    <input type="number" id="node-input-regionY" placeholder="y" style="width: 33%; margin-left: 4%;">
+  </div>
+  <div class="form-row">
+    <label for="node-input-regionWidth"><i class="fa fa-expand"></i> W / H</label>
+    <input type="number" id="node-input-regionWidth" placeholder="width" style="width: 33%;">
+    <input type="number" id="node-input-regionHeight" placeholder="height" style="width: 33%; margin-left: 4%;">
+  </div>
+
+  <hr>
+  <h4>Output</h4>
+  <div class="form-row">
+    <label for="node-input-format"><i class="fa fa-file-image-o"></i> Format</label>
+    <select id="node-input-format" style="width: 70%;">
+      <option value="png">PNG Buffer (Default)</option>
+      <option value="jpeg">JPEG Buffer</option>
+      <option value="raw">Raw RGBA ({ data, width, height })</option>
+    </select>
+  </div>
+</script>
+
+<script type="text/html" data-help-name="window-capture">
+  <p>Captures screenshots of a specific desktop window, client region, or entire monitor using <code>node-screenshots</code>.</p>
+
+  <h3>Inputs (Optional Overrides)</h3>
+  <dl class="message-properties">
+    <dt class="optional">target <span class="property-type">string | object</span></dt>
+    <dd>Set to <code>"all"</code> or <code>{ type: "window"|"process"|"id"|"all", value: "..." }</code>. Shorthand properties <code>msg.window</code>, <code>msg.process</code>, or <code>msg.id</code> are also supported.</dd>
+    <dt class="optional">region <span class="property-type">object</span></dt>
+    <dd><code>{ x, y, width, height, origin: "client" | "window" }</code>. Leave out for full window or screen capture.</dd>
+    <dt class="optional">format <span class="property-type">string</span></dt>
+    <dd><code>"png"</code> (default), <code>"jpeg"</code>, or <code>"raw"</code>.</dd>
+  </dl>
+
+  <h3>Outputs</h3>
+  <dl class="message-properties">
+    <dt>payload <span class="property-type">Buffer | object</span></dt>
+    <dd>PNG or JPEG <code>Buffer</code>, or <code>{ data: Buffer, width, height }</code> when format is <code>"raw"</code>.</dd>
+    <dt>capture <span class="property-type">object</span></dt>
+    <dd>Capture telemetry: <code>{ target, region, width, height, ms }</code>.</dd>
+  </dl>
+
+  <h3>Errors</h3>
+  <p>Sets node status and triggers Catch nodes via <code>node.error(msg)</code> with exact status texts:</p>
+  <ul>
+    <li><code>"window not found"</code></li>
+    <li><code>"minimized"</code></li>
+    <li><code>"region outside window"</code></li>
+  </ul>
+</script>
