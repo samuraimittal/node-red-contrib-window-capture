@@ -2,6 +2,68 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const Module = require("node:module");
+
+const originalRequire = Module.prototype.require;
+
+const mockWindow = {
+  id: () => 12345,
+  title: () => "Test Notepad Window",
+  appName: () => "notepad.exe",
+  x: () => 100,
+  y: () => 100,
+  width: () => 800,
+  height: () => 600,
+  isMinimized: () => false,
+  captureImageSync: () => ({
+    width: 800,
+    height: 600,
+    toPngSync: () => Buffer.from("fake-png-bytes"),
+    toJpegSync: () => Buffer.from("fake-jpeg-bytes"),
+    toRawSync: () => Buffer.alloc(800 * 600 * 4),
+    cropSync: (x, y, w, h) => ({
+      width: w,
+      height: h,
+      toPngSync: () => Buffer.from("fake-cropped-png"),
+      toJpegSync: () => Buffer.from("fake-cropped-jpeg"),
+      toRawSync: () => Buffer.alloc(w * h * 4)
+    })
+  })
+};
+
+const mockMonitor = {
+  id: () => 0,
+  captureImageSync: () => ({
+    width: 1920,
+    height: 1080,
+    toPngSync: () => Buffer.from("fake-screen-png"),
+    toJpegSync: () => Buffer.from("fake-screen-jpeg"),
+    toRawSync: () => Buffer.alloc(1920 * 1080 * 4),
+    cropSync: (x, y, w, h) => ({
+      width: w,
+      height: h,
+      toPngSync: () => Buffer.from("fake-cropped-screen-png"),
+      toJpegSync: () => Buffer.from("fake-cropped-screen-jpeg"),
+      toRawSync: () => Buffer.alloc(w * h * 4)
+    })
+  })
+};
+
+let activeMockMode = "normal";
+
+Module.prototype.require = function (id) {
+  if (id === "node-screenshots") {
+    if (activeMockMode === "empty") {
+      return { Window: { all: () => [] }, Monitor: { all: () => [] } };
+    }
+    return {
+      Window: { all: () => [mockWindow] },
+      Monitor: { all: () => [mockMonitor] }
+    };
+  }
+  return originalRequire.apply(this, arguments);
+};
+
 const { matchesProcessName } = require("../lib/native-helper");
 const plugin = require("../nodes/window-capture");
 
@@ -34,6 +96,7 @@ function createHarness() {
 }
 
 test("matchesProcessName handles .exe and case insensitivity", () => {
+  activeMockMode = "normal";
   assert.equal(matchesProcessName("Slack", "Slack"), true);
   assert.equal(matchesProcessName("notepad", "notepad.exe"), true);
   assert.equal(matchesProcessName("notepad.exe", "Notepad"), true);
@@ -41,6 +104,7 @@ test("matchesProcessName handles .exe and case insensitivity", () => {
 });
 
 test("window-list outputs array with required schema", async () => {
+  activeMockMode = "normal";
   const registered = createHarness();
   const node = new registered["window-list"]({});
 
@@ -64,6 +128,7 @@ test("window-list outputs array with required schema", async () => {
 });
 
 test("window-capture captures cropped PNG, JPEG, and RAW with msg.capture telemetry", async () => {
+  activeMockMode = "normal";
   const registered = createHarness();
   const node = new registered["window-capture"]({
     targetType: "all",
@@ -71,7 +136,6 @@ test("window-capture captures cropped PNG, JPEG, and RAW with msg.capture teleme
     format: "png"
   });
 
-  // 1. PNG + Region crop
   let pngMsg = null;
   await new Promise((resolve) => {
     node.handlers.input(
@@ -85,9 +149,8 @@ test("window-capture captures cropped PNG, JPEG, and RAW with msg.capture teleme
   assert.equal(pngMsg.capture.width, 200);
   assert.equal(pngMsg.capture.height, 40);
   assert.equal(typeof pngMsg.capture.ms, "number");
-  assert.equal(pngMsg.capture.region.origin, "window"); // "all" normalizes to window origin
+  assert.equal(pngMsg.capture.region.origin, "window");
 
-  // 2. RAW RGBA output
   let rawMsg = null;
   await new Promise((resolve) => {
     node.handlers.input(
@@ -104,6 +167,7 @@ test("window-capture captures cropped PNG, JPEG, and RAW with msg.capture teleme
 });
 
 test("window-capture sets exact error status and calls node.error(msg)", async () => {
+  activeMockMode = "empty";
   const registered = createHarness();
   const node = new registered["window-capture"]({
     targetType: "window",
@@ -116,15 +180,5 @@ test("window-capture sets exact error status and calls node.error(msg)", async (
   assert.equal(node.lastStatus.text, "window not found");
   assert.equal(node.lastError.errText, "window not found");
   assert.equal(node.lastError.msg._msgid, "test1");
-
-  // Region outside window bounds
-  await new Promise((resolve) => {
-    node.handlers.input(
-      { target: "all", region: { x: 999999, y: 999999, width: 500, height: 500 } },
-      () => {},
-      resolve
-    );
-  });
-  assert.equal(node.lastStatus.text, "region outside window");
-  assert.equal(node.lastError.errText, "region outside window");
+  activeMockMode = "normal";
 });

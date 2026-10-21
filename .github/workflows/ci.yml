@@ -18,8 +18,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      - name: Install Linux X11/XCB packages
+      - name: Install Linux X11/XCB packages & Xvfb
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libxcb1 libxrandr2 libdbus-1-3
-      - run: npm install
-      - run: npm test
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxcb1 libxrandr2 libdbus-1-3 xvfb
+      - name: Run tests with Xvfb on Linux
+        if: runner.os == 'Linux'
+        run: xvfb-run --auto-servernum npm test
+      - name: Run tests on Windows/macOS
+        if: runner.os != 'Linux'
+        run: npm test
